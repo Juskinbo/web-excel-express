@@ -3,9 +3,58 @@ const router = express.Router();
 const bodyParser = require("body-parser");
 const userDB = require("./db/userDB");
 const adminDB = require("./db/adminDB");
+const loginDB = require("./db/loginDB");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
+
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
 
+function sha256Hash(input) {
+  const hash = crypto.createHash("sha256");
+  const hashedValue = hash.update(input).digest("hex");
+  return hashedValue;
+}
+
+function generateToken(unionid) {
+  const payload = { unionid: unionid };
+  const token = jwt.sign(payload, process.env.jwt_secret_key);
+  return token;
+}
+
+function verifyToken(token) {
+  try {
+    const decoded = jwt.verify(token, process.env.jwt_secret_key);
+    return decoded; // 返回值是payload
+  } catch (err) {
+    return null;
+  }
+}
+
+router.post("/login", (req, res) => {
+  const unionid = req.body.unionid;
+  const password = sha256Hash(req.body.password);
+  loginDB.check_account(unionid).then((result) => {
+    if (result.length === 0) {
+      res.json({
+        result: "error",
+        msg: "unionid错误",
+      });
+    } else {
+      if (result[0].password === password) {
+        res.json({
+          result: "success",
+          token: generateToken(unionid),
+        });
+      } else {
+        res.json({
+          result: "error",
+          msg: "密码错误",
+        });
+      }
+    }
+  });
+});
 router.post("/user", (req, res) => {
   // req包含参数opt
   // opt 是希望执行的操作
@@ -28,14 +77,24 @@ router.post("/user", (req, res) => {
       });
   } else {
     // 获取本人信息
-    if(!req.body.unionid){
+    if (!req.body.token) {
       res.json({
-        result:"error",
-        msg:"opt参数错误"
-      })
+        result: "error",
+        msg: "opt参数错误",
+      });
       return;
     }
-    userDB.get_my_info(req.body.unionid).then((result) => {
+    // 判断一下token函数是否正确
+    const payload = verifyToken(req.body.token);
+    if (payload === null) {
+      res.json({
+        result: "error",
+        msg: "token错误",
+      });
+      return;
+    }
+    const unionid = payload.unionid;
+    userDB.get_my_info(unionid).then((result) => {
       // 判断一下数据库中该用户是否存在
       if (result.length === 0) {
         res.json({
@@ -62,14 +121,12 @@ router.post("/user", (req, res) => {
           });
         } else if (req.body.opt === "change_my_info") {
           // 登录用户修改个人信息
-          userDB
-            .change_my_info(req.body.unionid, req.body.info)
-            .then((result) => {
-              res.json({
-                result: "success",
-                msg: "修改成功",
-              });
+          userDB.change_my_info(unionid, req.body.info).then((result) => {
+            res.json({
+              result: "success",
+              msg: "修改成功",
             });
+          });
         } else {
           // opt参数错误
           res.json({
@@ -84,7 +141,16 @@ router.post("/user", (req, res) => {
 
 router.post("/admin", (req, res) => {
   // 先判断一下是否是admin用户
-  userDB.get_my_info(req.body.unionid).then((result) => {
+  const payload = verifyToken(req.body.token);
+  if(payload === null){
+    res.json({
+      result: "error",
+      msg: "token错误",
+    });
+    return;
+  }
+  const unionid = payload.unionid;
+  userDB.get_my_info(unionid).then((result) => {
     if (result.length === 0 || result[0].type !== "admin") {
       console.log(result);
       res.json({
