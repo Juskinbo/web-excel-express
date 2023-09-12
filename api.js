@@ -59,7 +59,36 @@ router.post("/user", (req, res) => {
   // req包含参数opt
   // opt 是希望执行的操作
   // 开始判断opt
-  if (req.body.opt === "submit_my_info") {
+  if (req.body.opt === "check_name_phone_number") {
+    userDB.check_name(req.body.name).then((result1) => {
+      userDB.check_phone_number(req.body.phone_number).then((result2) => {
+        if (result1.length === 0 && result2.length === 0) {
+          res.json({
+            // 代表用户名和电话号码都未注册
+            result: "success",
+          });
+        } else if (result1.length !== 0 && result2.length === 0) {
+          res.json({
+            // 代表用户名已注册
+            result: "error",
+            failed: "name",
+          });
+        } else if (result1.length === 0 && result2.length !== 0) {
+          res.json({
+            // 代表用户名已注册
+            result: "error",
+            failed: "phone_number",
+          });
+        } else {
+          res.json({
+            // 代表用户名和电话号码都已注册
+            result: "error",
+            failed: "both",
+          });
+        }
+      });
+    });
+  } else if (req.body.opt === "submit_my_info") {
     // 未登录用户通过表单提交的信息
     userDB
       .submit_my_info(
@@ -142,7 +171,7 @@ router.post("/user", (req, res) => {
 router.post("/admin", (req, res) => {
   // 先判断一下是否是admin用户
   const payload = verifyToken(req.body.token);
-  if(payload === null){
+  if (payload === null) {
     res.json({
       result: "error",
       msg: "token错误",

@@ -1,6 +1,16 @@
 const pool = require("./pool");
 
 module.exports = {
+  // 检测用户名是否已存在
+  check_name(name) {
+    const sql = `select * from account where unionid=?`;
+    return pool.execute(sql, [name]);
+  },
+  // 检测电话号码是否已注册
+  check_phone_number(phone_number) {
+    const sql = `select * from account where phone_number=?`;
+    return pool.execute(sql, [phone_number]);
+  },
   // 获取本人信息
   get_my_info(unionid) {
     const sql = `select name, phone_number, room_id, skills, willingness, type from user_info where unionid=?`;
