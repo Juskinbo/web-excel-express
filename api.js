@@ -75,23 +75,17 @@ router.post("/user", (req, res) => {
                 result: "success",
               });
             });
-        } else if (result1.length !== 0 && result2.length === 0) {
+        } else if (result1.length !== 0) {
           res.json({
             // 代表用户名已注册
             result: "error",
             failed: "name",
           });
-        } else if (result1.length === 0 && result2.length !== 0) {
+        } else if (result2.length !== 0) {
           res.json({
             // 代表用户名已注册
             result: "error",
             failed: "phone_number",
-          });
-        } else {
-          res.json({
-            // 代表用户名和电话号码都已注册
-            result: "error",
-            failed: "both",
           });
         }
       });
