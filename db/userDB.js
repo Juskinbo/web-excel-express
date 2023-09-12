@@ -11,6 +11,10 @@ module.exports = {
     const sql = `select * from account where phone_number=?`;
     return pool.execute(sql, [phone_number]);
   },
+  register(name, password, phone_number) {
+    const sql = `insert into account (unionid, password, phone_number) values (?, ?, ?)`;
+    return pool.execute(sql, [name, password, phone_number]);
+  },
   // 获取本人信息
   get_my_info(unionid) {
     const sql = `select name, phone_number, room_id, skills, willingness, type from user_info where unionid=?`;

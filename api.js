@@ -59,14 +59,22 @@ router.post("/user", (req, res) => {
   // req包含参数opt
   // opt 是希望执行的操作
   // 开始判断opt
-  if (req.body.opt === "check_name_phone_number") {
+  if (req.body.opt === "register") {
     userDB.check_name(req.body.name).then((result1) => {
       userDB.check_phone_number(req.body.phone_number).then((result2) => {
         if (result1.length === 0 && result2.length === 0) {
-          res.json({
-            // 代表用户名和电话号码都未注册
-            result: "success",
-          });
+          // 代表用户名和电话号码都未注册
+          userDB
+            .register(
+              req.body.name,
+              sha256Hash(req.body.password),
+              req.body.phone_number
+            )
+            .then((result) => {
+              res.json({
+                result: "success",
+              });
+            });
         } else if (result1.length !== 0 && result2.length === 0) {
           res.json({
             // 代表用户名已注册
