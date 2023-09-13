@@ -60,12 +60,13 @@ router.post("/user", (req, res) => {
   // opt 是希望执行的操作
   // 开始判断opt
   if (req.body.opt === "register") {
-    userDB.check_name(req.body.name).then((result1) => {
+    userDB.check_unionid(req.body.unionid).then((result1) => {
       userDB.check_phone_number(req.body.phone_number).then((result2) => {
         if (result1.length === 0 && result2.length === 0) {
           // 代表用户名和电话号码都未注册
           userDB
             .register(
+              req.body.unionid,
               req.body.name,
               sha256Hash(req.body.password),
               req.body.phone_number
@@ -77,9 +78,9 @@ router.post("/user", (req, res) => {
             });
         } else if (result1.length !== 0) {
           res.json({
-            // 代表用户名已注册
+            // 代表用户ID已注册
             result: "error",
-            failed: "name",
+            failed: "unionid",
           });
         } else if (result2.length !== 0) {
           res.json({
@@ -140,6 +141,7 @@ router.post("/user", (req, res) => {
             room_id: result[0].room_id,
             skills: result[0].skills,
             willingness: result[0].willingness,
+            type: result[0].type,
           });
         } else if (req.body.opt === "get_all_info") {
           // 获取所有信息，不包含意愿度
