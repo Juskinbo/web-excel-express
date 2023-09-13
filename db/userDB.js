@@ -2,7 +2,7 @@ const pool = require("./pool");
 
 module.exports = {
   // 检测用户名是否已存在
-  check_name(name) {
+  check_unionid(name) {
     const sql = `select * from account where unionid=?`;
     return pool.execute(sql, [name]);
   },
@@ -11,9 +11,12 @@ module.exports = {
     const sql = `select * from account where phone_number=?`;
     return pool.execute(sql, [phone_number]);
   },
-  register(name, password, phone_number) {
-    const sql = `insert into account (unionid, password, phone_number) values (?, ?, ?)`;
-    return pool.execute(sql, [name, password, phone_number]);
+  // 用户注册
+  async register(unionid, name, password, phone_number) {
+    const sql1 = `insert into account (unionid, password, phone_number) values (?, ?, ?)`;
+    const sql2 = `insert into user_info (unionid, name, phone_number, type) values (?, ?, ?, ?)`;
+    await pool.execute(sql1, [unionid, password, phone_number]);
+    return await pool.execute(sql2, [unionid, name, phone_number, "user"]);
   },
   // 获取本人信息
   get_my_info(unionid) {
