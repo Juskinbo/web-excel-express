@@ -200,14 +200,14 @@ router.post("/admin", (req, res) => {
           data: result,
         });
       });
-    } else if(req.body.opt === "admin_change_info") {
+    } else if (req.body.opt === "admin_change_info") {
       adminDB.admin_change_info(req.body.info).then((result) => {
         res.json({
           result: "success",
           msg: "修改成功",
         });
       });
-    }else {
+    } else {
       res.json({
         result: "error",
         msg: "opt参数错误",
