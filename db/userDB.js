@@ -23,9 +23,17 @@ module.exports = {
     const sql = `select name, phone_number, room_id, skills, willingness, type from user_info where unionid=?`;
     return pool.execute(sql, [unionid]);
   },
-  get_all_info() {
-    const sql = `select name, phone_number, room_id, skills, type from user_info`;
-    return pool.execute(sql, []);
+  // 获取所有人信息时候不包括本人信息，同时所有人手机号应该进行部分隐藏
+  async get_all_info(unionid) {
+    const sql = `select name, phone_number, room_id, skills, type from user_info where type!='visitor' and unionid != ?`;
+    const result = await pool.execute(sql, [unionid]);
+    for (let i = 0; i < result.length; i++) {
+      result[i].phone_number =
+        result[i].phone_number.substring(0, 3) +
+        "****" +
+        result[i].phone_number.substring(7, 11);
+    }
+    return result;
   },
   // 此处注意函数参数不确定
   change_my_info(unionid, info) {

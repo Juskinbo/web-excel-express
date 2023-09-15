@@ -144,8 +144,8 @@ router.post("/user", (req, res) => {
             type: result[0].type,
           });
         } else if (req.body.opt === "get_all_info") {
-          // 获取所有信息，不包含意愿度
-          userDB.get_all_info().then((result) => {
+          // 获取所有信息，不包含意愿度，并且无法获取游客信息，获取的手机号中间四位不显示，同时不获取本人信息
+          userDB.get_all_info(unionid).then((result) => {
             console.log(result);
             res.json({
               count: result.length,
@@ -194,13 +194,20 @@ router.post("/admin", (req, res) => {
     }
     // opt = 'get_all_info' 管理员获取所有信息，包含意愿度
     if (req.body.opt === "get_all_info") {
-      adminDB.get_all_info().then((result) => {
+      adminDB.get_all_info(unionid).then((result) => {
         res.json({
           count: result.length,
           data: result,
         });
       });
-    } else {
+    } else if(req.body.opt === "admin_change_info") {
+      adminDB.admin_change_info(req.body.info).then((result) => {
+        res.json({
+          result: "success",
+          msg: "修改成功",
+        });
+      });
+    }else {
       res.json({
         result: "error",
         msg: "opt参数错误",
