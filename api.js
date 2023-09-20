@@ -16,8 +16,8 @@ function sha256Hash(input) {
   return hashedValue;
 }
 
-function generateToken(unionid) {
-  const payload = { unionid: unionid };
+function generateToken(phone_number) {
+  const payload = { phone_number: phone_number };
   const token = jwt.sign(payload, process.env.jwt_secret_key);
   return token;
 }
@@ -32,19 +32,19 @@ function verifyToken(token) {
 }
 
 router.post("/login", (req, res) => {
-  const unionid = req.body.unionid;
+  const phone_number = req.body.phone_number;
   const password = sha256Hash(req.body.password);
-  loginDB.check_account(unionid).then((result) => {
+  loginDB.check_account(phone_number).then((result) => {
     if (result.length === 0) {
       res.json({
         result: "error",
-        msg: "unionid错误",
+        msg: "电话号码错误",
       });
     } else {
       if (result[0].password === password) {
         res.json({
           result: "success",
-          token: generateToken(unionid),
+          token: generateToken(phone_number),
         });
       } else {
         res.json({
@@ -55,41 +55,33 @@ router.post("/login", (req, res) => {
     }
   });
 });
+
 router.post("/user", (req, res) => {
   // req包含参数opt
   // opt 是希望执行的操作
   // 开始判断opt
   if (req.body.opt === "register") {
-    userDB.check_unionid(req.body.unionid).then((result1) => {
-      userDB.check_phone_number(req.body.phone_number).then((result2) => {
-        if (result1.length === 0 && result2.length === 0) {
-          // 代表用户名和电话号码都未注册
-          userDB
-            .register(
-              req.body.unionid,
-              req.body.name,
-              sha256Hash(req.body.password),
-              req.body.phone_number
-            )
-            .then((result) => {
-              res.json({
-                result: "success",
-              });
+    userDB.check_phone_number(req.body.phone_number).then((result) => {
+      if (result.length === 0) {
+        // 代表电话号码未注册
+        userDB
+          .register(
+            req.body.name,
+            sha256Hash(req.body.password),
+            req.body.phone_number
+          )
+          .then((result) => {
+            res.json({
+              result: "success",
             });
-        } else if (result1.length !== 0) {
-          res.json({
-            // 代表用户ID已注册
-            result: "error",
-            failed: "unionid",
           });
-        } else if (result2.length !== 0) {
-          res.json({
-            // 代表用户名已注册
-            result: "error",
-            failed: "phone_number",
-          });
-        }
-      });
+      } else if (result.length !== 0) {
+        res.json({
+          // 代表电话号码已注册
+          result: "error",
+          failed: "phone_number",
+        });
+      }
     });
   } else if (req.body.opt === "submit_my_info") {
     // 未登录用户通过表单提交的信息
@@ -125,13 +117,13 @@ router.post("/user", (req, res) => {
       });
       return;
     }
-    const unionid = payload.unionid;
-    userDB.get_my_info(unionid).then((result) => {
+    const phone_number = payload.phone_number;
+    userDB.get_my_info(phone_number).then((result) => {
       // 判断一下数据库中该用户是否存在
       if (result.length === 0) {
         res.json({
           result: "error",
-          msg: "unionid错误",
+          msg: "电话号码错误",
         });
       } else {
         if (req.body.opt === "get_my_info") {
@@ -145,7 +137,7 @@ router.post("/user", (req, res) => {
           });
         } else if (req.body.opt === "get_all_info") {
           // 获取所有信息，不包含意愿度，并且无法获取游客信息，获取的手机号中间四位不显示，同时不获取本人信息
-          userDB.get_all_info(unionid).then((result) => {
+          userDB.get_all_info(phone_number).then((result) => {
             console.log(result);
             res.json({
               count: result.length,
@@ -154,7 +146,7 @@ router.post("/user", (req, res) => {
           });
         } else if (req.body.opt === "change_my_info") {
           // 登录用户修改个人信息
-          userDB.change_my_info(unionid, req.body.info).then((result) => {
+          userDB.change_my_info(phone_number, req.body.info).then((result) => {
             res.json({
               result: "success",
               msg: "修改成功",
@@ -182,19 +174,19 @@ router.post("/admin", (req, res) => {
     });
     return;
   }
-  const unionid = payload.unionid;
-  userDB.get_my_info(unionid).then((result) => {
+  const phone_number = payload.phone_number;
+  userDB.get_my_info(phone_number).then((result) => {
     if (result.length === 0 || result[0].type !== "admin") {
       console.log(result);
       res.json({
         result: "error",
-        msg: "unionid错误或无权限",
+        msg: "电话号码错误或无权限",
       });
       return;
     }
     // opt = 'get_all_info' 管理员获取所有信息，包含意愿度
     if (req.body.opt === "get_all_info") {
-      adminDB.get_all_info(unionid).then((result) => {
+      adminDB.get_all_info(phone_number).then((result) => {
         res.json({
           count: result.length,
           data: result,
